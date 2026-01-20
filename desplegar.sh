@@ -45,6 +45,10 @@ imprimir_error() {
     echo -e "${ROJO}✗ $1${NC}"
 }
 
+imprimir_info() {
+    echo -e "${AZUL}ℹ $1${NC}"
+}
+
 # Función para verificar si un comando existe
 verificar_comando() {
     if ! command -v $1 &> /dev/null; then
@@ -104,6 +108,7 @@ apis=(
     "bigquery.googleapis.com"
     "logging.googleapis.com"
     "run.googleapis.com"
+    "secretmanager.googleapis.com"
     "eventarc.googleapis.com"
     "weather.googleapis.com"
 )
@@ -135,6 +140,7 @@ roles=(
     "roles/logging.logWriter"
     "roles/cloudfunctions.invoker"
     "roles/run.invoker"
+    "roles/secretmanager.secretAccessor"
 )
 
 for rol in "${roles[@]}"; do
@@ -145,6 +151,54 @@ for rol in "${roles[@]}"; do
         --quiet
 done
 imprimir_exito "Permisos asignados correctamente"
+
+# Configurar Secret Manager para API Key
+imprimir_titulo "Configurando Secret Manager para Weather API Key"
+
+# Verificar si el secret ya existe
+if gcloud secrets describe weather-api-key --project=$ID_PROYECTO &> /dev/null; then
+    imprimir_exito "Secret 'weather-api-key' ya existe en Secret Manager"
+else
+    imprimir_advertencia "Secret 'weather-api-key' NO existe"
+    imprimir_info "Creando secret en Secret Manager..."
+
+    # Crear el secret (sin valor aún)
+    gcloud secrets create weather-api-key \
+        --replication-policy="automatic" \
+        --project=$ID_PROYECTO
+
+    imprimir_exito "Secret creado: weather-api-key"
+
+    echo ""
+    imprimir_advertencia "⚠️  ACCIÓN REQUERIDA: Debes agregar tu Weather API Key al secret"
+    echo ""
+    echo "Obtén tu API Key existente:"
+    echo "  gcloud alpha services api-keys list --project=$ID_PROYECTO"
+    echo ""
+    echo "Obtén el string de la API Key (reemplaza KEY_ID con el ID de tu key):"
+    echo "  gcloud alpha services api-keys get-key-string KEY_ID --project=$ID_PROYECTO"
+    echo ""
+    echo "Agrega el valor al secret:"
+    echo "  echo -n 'TU_API_KEY_AQUI' | gcloud secrets versions add weather-api-key --data-file=- --project=$ID_PROYECTO"
+    echo ""
+    read -p "Presiona ENTER cuando hayas agregado la API Key al secret..."
+fi
+
+# Verificar que el secret tenga al menos una versión
+VERSION_COUNT=$(gcloud secrets versions list weather-api-key \
+    --project=$ID_PROYECTO \
+    --format="value(name)" 2>/dev/null | wc -l)
+
+if [ "$VERSION_COUNT" -eq 0 ]; then
+    imprimir_error "El secret 'weather-api-key' no tiene ninguna versión (está vacío)"
+    echo ""
+    echo "Agrega tu Weather API Key:"
+    echo "  echo -n 'TU_API_KEY_AQUI' | gcloud secrets versions add weather-api-key --data-file=- --project=$ID_PROYECTO"
+    echo ""
+    exit 1
+fi
+
+imprimir_exito "Secret Manager configurado correctamente con API Key"
 
 # Crear topics de Pub/Sub
 imprimir_titulo "Creando topics de Pub/Sub"

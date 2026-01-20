@@ -77,6 +77,7 @@ ROLES_REQUERIDOS=(
     "roles/bigquery.dataEditor"
     "roles/logging.logWriter"
     "roles/cloudfunctions.invoker"
+    "roles/secretmanager.secretAccessor"
 )
 
 # Obtener roles actuales
@@ -116,6 +117,29 @@ if [ $ROLES_AGREGADOS -eq 0 ]; then
     imprimir_exito "Todos los roles están correctamente asignados"
 else
     imprimir_exito "Se agregaron $ROLES_AGREGADOS roles faltantes"
+fi
+
+# Verificar Secret Manager
+imprimir_info "Verificando configuración de Secret Manager..."
+
+if gcloud secrets describe weather-api-key --project=$ID_PROYECTO &> /dev/null; then
+    # Verificar que tenga versiones
+    VERSION_COUNT=$(gcloud secrets versions list weather-api-key \
+        --project=$ID_PROYECTO \
+        --format="value(name)" 2>/dev/null | wc -l)
+
+    if [ "$VERSION_COUNT" -eq 0 ]; then
+        imprimir_error "Secret 'weather-api-key' existe pero está vacío"
+        echo "Agrega tu Weather API Key:"
+        echo "  echo -n 'TU_API_KEY' | gcloud secrets versions add weather-api-key --data-file=- --project=$ID_PROYECTO"
+        exit 1
+    else
+        imprimir_exito "Secret 'weather-api-key' configurado correctamente"
+    fi
+else
+    imprimir_error "Secret 'weather-api-key' NO existe en Secret Manager"
+    echo "Ejecuta primero: ./desplegar.sh $ID_PROYECTO"
+    exit 1
 fi
 
 ##############################################################################
