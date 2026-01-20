@@ -103,21 +103,29 @@ gsutil ls gs://TU_PROYECTO-datos-clima-bronce/**/*.json | head -10
 
 ### BigQuery
 
-Deberías ver 3 registros (uno por cada ubicación):
+Deberías ver **20 registros** (uno por cada ubicación):
 
 ```
-+-------------------+-------------+--------------------+---------------------+
-| nombre_ubicacion  | temperatura | descripcion_clima  | hora_actual         |
-+-------------------+-------------+--------------------+---------------------+
-| Santiago          | 25.5        | Sunny              | 2026-01-20 13:00:00 |
-| Farellones        | 10.2        | Partly Cloudy      | 2026-01-20 13:00:00 |
-| Valparaíso        | 22.8        | Clear              | 2026-01-20 13:00:00 |
-+-------------------+-------------+--------------------+---------------------+
++----------------------+-------------+--------------------+---------------------+
+| nombre_ubicacion     | temperatura | descripcion_clima  | hora_actual         |
++----------------------+-------------+--------------------+---------------------+
+| Arica                | 28.5        | Sunny              | 2026-01-20 13:00:00 |
+| Iquique              | 26.3        | Clear              | 2026-01-20 13:00:00 |
+| San Pedro de Atacama | 24.1        | Sunny              | 2026-01-20 13:00:00 |
+| La Serena            | 22.8        | Partly Cloudy      | 2026-01-20 13:00:00 |
+| Viña del Mar         | 21.5        | Cloudy             | 2026-01-20 13:00:00 |
+| Santiago             | 25.5        | Sunny              | 2026-01-20 13:00:00 |
+| Farellones           | 10.2        | Partly Cloudy      | 2026-01-20 13:00:00 |
+| Pucón                | 18.3        | Rainy              | 2026-01-20 13:00:00 |
+| Puerto Varas         | 14.7        | Cloudy             | 2026-01-20 13:00:00 |
+| Punta Arenas         | 8.2         | Windy              | 2026-01-20 13:00:00 |
+| ... (10 más)         | ...         | ...                | ...                 |
++----------------------+-------------+--------------------+---------------------+
 ```
 
 ### Cloud Storage
 
-Deberías ver 3 archivos JSON con los datos crudos.
+Deberías ver **20 archivos JSON** con los datos crudos (uno por ubicación por hora).
 
 ### Cloud Scheduler
 
