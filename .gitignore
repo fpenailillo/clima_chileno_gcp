@@ -1,76 +1,35 @@
-# Python
+# Python cache
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-ENV/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-.pytest_cache/
-.coverage
-.coverage.*
-htmlcov/
-.tox/
-.nox/
-.hypothesis/
-pytestdebug.log
+*.pyc
 
-# Google Cloud
-.gcloud/
+# Entornos virtuales
+venv/
+env/
+.venv/
+
+# Google Cloud credenciales
 credentials.json
 service-account-key.json
+*.json.key
 
-# IDEs y editores
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
-.DS_Store
-.vscode-server/
 
-# Entornos virtuales
+# Variables de entorno
 .env
 .env.local
-.env.*.local
-.venv/
-venv/
 
 # Logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
 # Archivos temporales
 *.tmp
-*.temp
-.tmp/
 tmp/
-temp/
-
-# Archives
-*.zip
 
 # OS
-Thumbs.db
 .DS_Store
+Thumbs.db

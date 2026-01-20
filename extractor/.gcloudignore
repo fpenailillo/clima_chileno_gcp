@@ -1,32 +1,17 @@
 # .gcloudignore para Cloud Function Extractor
-# Solo incluir archivos necesarios para la ejecución
+# Solo incluir main.py y requirements.txt
 
-# Python bytecode y cache
+# Python cache
 __pycache__/
-*.py[cod]
-*$py.class
 *.pyc
-.pytest_cache/
 
-# Tests
-test_*.py
-*_test.py
-tests/
-
-# Documentación
-*.md
-docs/
-
-# IDEs y editores
+# IDEs
 .vscode/
 .idea/
 *.swp
-*.swo
 
-# Entorno virtual (si existe localmente)
-venv/
-env/
-ENV/
+# Documentación
+*.md
 
 # Git
 .git/
