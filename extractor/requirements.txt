@@ -1,0 +1,14 @@
+# Dependencias para Cloud Function Extractor de Clima
+# Python 3.11
+
+# Framework para Cloud Functions
+functions-framework==3.*
+
+# Cliente de Google Cloud Pub/Sub
+google-cloud-pubsub==2.*
+
+# Autenticación de Google Cloud
+google-auth==2.*
+
+# Cliente HTTP para llamadas a APIs
+requests==2.*

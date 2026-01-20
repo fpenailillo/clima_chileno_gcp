@@ -1,0 +1,37 @@
+# .gcloudignore para Cloud Function Procesador
+# Solo incluir archivos necesarios para la ejecución
+
+# Python bytecode y cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+.pytest_cache/
+
+# Tests
+test_*.py
+*_test.py
+tests/
+
+# Documentación
+*.md
+docs/
+
+# IDEs y editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Entorno virtual (si existe localmente)
+venv/
+env/
+ENV/
+
+# Git
+.git/
+.gitignore
+
+# Otros
+.DS_Store
+*.log

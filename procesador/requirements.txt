@@ -1,0 +1,11 @@
+# Dependencias para Cloud Function Procesador de Clima
+# Python 3.11
+
+# Framework para Cloud Functions
+functions-framework==3.*
+
+# Cliente de Google Cloud Storage
+google-cloud-storage==2.*
+
+# Cliente de Google BigQuery
+google-cloud-bigquery==3.*
