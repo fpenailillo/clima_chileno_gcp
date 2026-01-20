@@ -30,6 +30,8 @@ logger = logging.getLogger(__name__)
 
 
 # Constantes de configuración
+# IMPORTANTE: GCP_PROJECT debe ser el NOMBRE del proyecto (ej: 'climas-chileno')
+# no el ID numérico (ej: '247279804834'). BigQuery requiere el nombre del proyecto.
 ID_PROYECTO = os.environ.get('GCP_PROJECT', os.environ.get('GOOGLE_CLOUD_PROJECT', ''))
 NOMBRE_BUCKET = os.environ.get('BUCKET_CLIMA', 'datos-clima-bronce')
 NOMBRE_DATASET = os.environ.get('DATASET_CLIMA', 'clima')
@@ -255,83 +257,81 @@ def transformar_datos_para_bigquery(datos: Dict[str, Any], uri_gcs: str) -> Dict
         datos_clima_raw = datos.get('datos_clima_raw', {})
         coordenadas = datos.get('coordenadas', {})
 
-        # Extraer fecha/hora
-        fecha_hora_str = extraer_valor_seguro(datos_clima_raw, ['dateTime'], '')
+        # Extraer fecha/hora - Weather API usa 'currentTime'
+        fecha_hora_str = extraer_valor_seguro(datos_clima_raw, ['currentTime'], '')
         try:
             fecha_hora = datetime.fromisoformat(fecha_hora_str.replace('Z', '+00:00'))
         except Exception:
             fecha_hora = datetime.now(timezone.utc)
 
-        # Extraer temperatura y métricas relacionadas
+        # Extraer temperatura y métricas relacionadas - Weather API usa 'degrees'
         temperatura_celsius = extraer_valor_seguro(
-            datos_clima_raw, ['temperature', 'value']
+            datos_clima_raw, ['temperature', 'degrees']
         )
         sensacion_termica = extraer_valor_seguro(
-            datos_clima_raw, ['temperatureApparent', 'value']
+            datos_clima_raw, ['feelsLikeTemperature', 'degrees']
         )
         punto_rocio = extraer_valor_seguro(
-            datos_clima_raw, ['dewPoint', 'value']
+            datos_clima_raw, ['dewPoint', 'degrees']
         )
         indice_calor = extraer_valor_seguro(
-            datos_clima_raw, ['heatIndex', 'value']
+            datos_clima_raw, ['heatIndex', 'degrees']
         )
         sensacion_viento = extraer_valor_seguro(
-            datos_clima_raw, ['windChill', 'value']
+            datos_clima_raw, ['windChill', 'degrees']
         )
 
-        # Extraer condiciones climáticas
-        condiciones = extraer_valor_seguro(datos_clima_raw, ['weatherConditions'], [])
-        condicion_clima = None
-        descripcion_clima = None
+        # Extraer condiciones climáticas - Weather API usa 'weatherCondition' (singular)
+        condicion_clima = extraer_valor_seguro(
+            datos_clima_raw, ['weatherCondition', 'type']
+        )
+        descripcion_clima = extraer_valor_seguro(
+            datos_clima_raw, ['weatherCondition', 'description', 'text']
+        )
 
-        if condiciones and len(condiciones) > 0:
-            condicion_principal = condiciones[0]
-            condicion_clima = extraer_valor_seguro(condicion_principal, ['code'])
-            descripcion_clima = extraer_valor_seguro(condicion_principal, ['description'])
-
-        # Extraer precipitación
+        # Extraer precipitación - Weather API usa estructura anidada
         precipitacion = extraer_valor_seguro(
-            datos_clima_raw, ['precipitation', 'value']
+            datos_clima_raw, ['precipitation', 'qpf', 'quantity']
         )
         probabilidad_precipitacion = extraer_valor_seguro(
-            datos_clima_raw, ['precipitationProbability', 'value']
+            datos_clima_raw, ['precipitation', 'probability', 'percent']
         )
 
-        # Extraer métricas atmosféricas
+        # Extraer métricas atmosféricas - Weather API estructura
         presion_aire = extraer_valor_seguro(
-            datos_clima_raw, ['pressureAtSeaLevel', 'value']
+            datos_clima_raw, ['airPressure', 'meanSeaLevelMillibars']
         )
         humedad_relativa = extraer_valor_seguro(
-            datos_clima_raw, ['relativeHumidity', 'value']
+            datos_clima_raw, ['relativeHumidity']
         )
         visibilidad = extraer_valor_seguro(
-            datos_clima_raw, ['visibility', 'value']
+            datos_clima_raw, ['visibility', 'distance']
         )
 
-        # Extraer viento
+        # Extraer viento - Weather API usa estructura anidada
         velocidad_viento = extraer_valor_seguro(
-            datos_clima_raw, ['windSpeed', 'value']
+            datos_clima_raw, ['wind', 'speed', 'value']
         )
         direccion_viento = extraer_valor_seguro(
-            datos_clima_raw, ['windDirection', 'value']
+            datos_clima_raw, ['wind', 'direction', 'degrees']
         )
 
-        # Extraer índice UV
+        # Extraer índice UV - Weather API valor directo
         indice_uv = extraer_valor_seguro(
-            datos_clima_raw, ['uvIndex', 'value']
+            datos_clima_raw, ['uvIndex']
         )
 
-        # Extraer nubes y tormentas
+        # Extraer nubes y tormentas - Weather API valores directos
         cobertura_nubes = extraer_valor_seguro(
-            datos_clima_raw, ['cloudCover', 'value']
+            datos_clima_raw, ['cloudCover']
         )
         probabilidad_tormenta = extraer_valor_seguro(
-            datos_clima_raw, ['thunderstormProbability', 'value']
+            datos_clima_raw, ['thunderstormProbability']
         )
 
-        # Determinar si es de día
+        # Determinar si es de día - Weather API usa 'isDaytime'
         es_dia = extraer_valor_seguro(
-            datos_clima_raw, ['isDayTime']
+            datos_clima_raw, ['isDaytime']
         )
 
         # Construir fila para BigQuery
@@ -341,7 +341,7 @@ def transformar_datos_para_bigquery(datos: Dict[str, Any], uri_gcs: str) -> Dict
             'longitud': coordenadas.get('longitud'),
 
             'hora_actual': fecha_hora.isoformat(),
-            'zona_horaria': extraer_valor_seguro(datos_clima_raw, ['timeZone']),
+            'zona_horaria': extraer_valor_seguro(datos_clima_raw, ['timeZone', 'id']),
 
             'temperatura': temperatura_celsius,
             'sensacion_termica': sensacion_termica,
