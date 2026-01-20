@@ -183,6 +183,10 @@ gcloud config set project $ID_PROYECTO
 
 # Configurar credenciales para Application Default Credentials
 gcloud auth application-default login
+
+gcloud auth list
+gcloud config list project
+
 ```
 
 ## Despliegue
