@@ -161,14 +161,14 @@ Las siguientes APIs deben estar habilitadas (el script de despliegue las habilit
 ### 1. Clonar el Repositorio
 
 ```bash
-git clone <url-repositorio>
+git clone https://github.com/fpenailillo/clima_chileno_gcp
 cd clima_chileno_gcp
 ```
 
 ### 2. Configurar Variables de Entorno
 
 ```bash
-export ID_PROYECTO="clima-chileno"
+export ID_PROYECTO="climas-chileno"
 export REGION="us-central1"
 ```
 
@@ -198,7 +198,7 @@ El script `desplegar.sh` despliega toda la infraestructura automáticamente:
 Ejemplo:
 
 ```bash
-./desplegar.sh clima-chileno us-central1
+./desplegar.sh climas-chileno us-central1
 ```
 
 El script realiza las siguientes acciones:
