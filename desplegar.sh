@@ -200,6 +200,16 @@ fi
 
 imprimir_exito "Secret Manager configurado correctamente con API Key"
 
+# Agregar permisos IAM al secret para la cuenta de servicio
+imprimir_info "Configurando permisos IAM del secret..."
+gcloud secrets add-iam-policy-binding weather-api-key \
+    --member="serviceAccount:${CUENTA_SERVICIO}@${ID_PROYECTO}.iam.gserviceaccount.com" \
+    --role="roles/secretmanager.secretAccessor" \
+    --project=$ID_PROYECTO \
+    --quiet
+
+imprimir_exito "Permisos IAM del secret configurados"
+
 # Crear topics de Pub/Sub
 imprimir_titulo "Creando topics de Pub/Sub"
 
