@@ -24,7 +24,7 @@ Este proyecto implementa una arquitectura moderna de datos meteorológicos basad
 ┌─────────────────────────────┐
 │ Cloud Function: Extractor   │
 │ • Llama a Weather API       │
-│ • OAuth 2.0 authentication  │
+│ • API Key authentication    │
 │ • Publica a Pub/Sub         │
 └────────┬────────────────────┘
          │
@@ -75,8 +75,8 @@ El sistema monitorea las siguientes ubicaciones en Chile:
 - **Memoria**: 256 MB
 - **Timeout**: 60 segundos
 - **Funcionalidades**:
-  - Autenticación OAuth 2.0 con Google Weather API
-  - Llamadas paralelas para múltiples ubicaciones
+  - Autenticación con API Key desde Secret Manager
+  - Llamadas GET a Weather API para múltiples ubicaciones
   - Enriquecimiento de datos con metadata
   - Publicación a Pub/Sub con atributos para routing
   - Manejo robusto de errores y logging estructurado
@@ -155,6 +155,17 @@ Las siguientes APIs deben estar habilitadas (el script de despliegue las habilit
 - BigQuery API
 - Cloud Logging API
 - Cloud Run API
+- Secret Manager API
+- Weather API
+
+### Weather API Key
+
+**IMPORTANTE**: Necesitas una API Key con acceso a la Weather API:
+
+1. Ve a [Google Cloud Console - API Credentials](https://console.cloud.google.com/apis/credentials)
+2. Crea una API Key o usa una existente
+3. Asegúrate de que la API Key tenga acceso a `weather.googleapis.com`
+4. Durante el despliegue, se te solicitará agregar esta API Key a Secret Manager
 
 ## Configuración
 
@@ -208,16 +219,19 @@ Ejemplo:
 El script realiza las siguientes acciones:
 
 1. ✓ Valida dependencias
-2. ✓ Habilita APIs necesarias
+2. ✓ Habilita APIs necesarias (incluyendo Weather API y Secret Manager)
 3. ✓ Crea cuenta de servicio y asigna permisos
-4. ✓ Crea topics de Pub/Sub (principal y DLQ)
-5. ✓ Crea bucket de Cloud Storage con ciclo de vida
-6. ✓ Crea dataset y tabla de BigQuery
-7. ✓ Despliega Cloud Function Extractor
-8. ✓ Despliega Cloud Function Procesador
-9. ✓ Configura Cloud Scheduler (ejecución cada hora)
+4. ✓ Configura Secret Manager para Weather API Key
+5. ✓ Crea topics de Pub/Sub (principal y DLQ)
+6. ✓ Crea bucket de Cloud Storage con ciclo de vida
+7. ✓ Crea dataset y tabla de BigQuery
+8. ✓ Despliega Cloud Function Extractor
+9. ✓ Despliega Cloud Function Procesador
+10. ✓ Configura Cloud Scheduler (ejecución cada hora)
 
 **Tiempo estimado**: 5-10 minutos
+
+**Nota**: El script pausará para que agregues tu Weather API Key a Secret Manager. Sigue las instrucciones en pantalla.
 
 ### Opción 2: Despliegue Manual
 
@@ -290,19 +304,42 @@ gcloud scheduler jobs create http extraer-clima-job \
   --http-method=POST
 ```
 
+## Verificar Despliegue
+
+Después del despliegue, verifica que todo funcione correctamente:
+
+```bash
+# 1. Ejecutar el scheduler manualmente
+gcloud scheduler jobs run extraer-clima-job --location=us-central1
+
+# 2. Esperar 60 segundos para que los mensajes se procesen
+sleep 60
+
+# 3. Verificar datos en BigQuery
+bq query --use_legacy_sql=false \
+  "SELECT nombre_ubicacion, temperatura, descripcion_clima, hora_actual
+   FROM clima.condiciones_actuales
+   ORDER BY hora_actual DESC
+   LIMIT 5"
+
+# 4. Verificar archivos en Cloud Storage
+gsutil ls gs://climas-chileno-datos-clima-bronce/**/*.json | head -10
+```
+
 ## Uso
 
 ### Ejecución Manual
 
-Para probar el sistema manualmente:
+Para probar el sistema manualmente con autenticación:
 
 ```bash
 # Obtener URL del extractor
 URL_EXTRACTOR=$(gcloud functions describe extractor-clima \
   --gen2 --region=$REGION --format='value(serviceConfig.uri)')
 
-# Ejecutar extractor
-curl -X POST $URL_EXTRACTOR -H "Authorization: Bearer $(gcloud auth print-identity-token)"
+# Ejecutar extractor con autenticación
+curl -X POST $URL_EXTRACTOR \
+  -H "Authorization: Bearer $(gcloud auth print-identity-token)"
 ```
 
 ### Ejecución Programada
@@ -452,70 +489,39 @@ clima_chileno_gcp/
 ├── extractor/
 │   ├── main.py                 # Cloud Function de extracción
 │   ├── requirements.txt        # Dependencias del extractor
-│   └── .gcloudignore          # Archivos a ignorar en deploy del extractor
+│   └── .gcloudignore          # Archivos a ignorar en deploy
 ├── procesador/
 │   ├── main.py                 # Cloud Function de procesamiento
 │   ├── requirements.txt        # Dependencias del procesador
-│   └── .gcloudignore          # Archivos a ignorar en deploy del procesador
-├── desplegar.sh                # Script de despliegue automatizado
-├── reparar_proyecto.sh         # Script de reparación (si hay problemas)
+│   └── .gcloudignore          # Archivos a ignorar en deploy
+├── desplegar.sh                # Script de despliegue automatizado (único punto de entrada)
 ├── .gcloudignore              # Archivos a ignorar en deploy general
 ├── .gitignore                  # Archivos a ignorar en git
+├── requerimientos.md           # Requerimientos técnicos del proyecto
 └── README.md                   # Este archivo (documentación completa)
 ```
 
 ## Solución de Problemas
 
-### Script de Reparación Automático
-
-Si experimentas problemas después del despliegue, especialmente con Cloud Scheduler, ejecuta:
-
-```bash
-./reparar_proyecto.sh
-```
-
-Este script automáticamente:
-- ✓ Verifica y agrega roles faltantes (especialmente `roles/run.invoker`)
-- ✓ Reconfigura Cloud Scheduler con OIDC correcto
-- ✓ Prueba la invocación manual
-- ✓ Verifica logs y Pub/Sub
-
 ### Error: Cloud Scheduler "The request was not authenticated"
 
-**Síntoma**: Cloud Scheduler no puede invocar Cloud Function Gen2, error de autenticación
+**Síntoma**: Cloud Scheduler no puede invocar Cloud Function Gen2
 
-**Causa**: Falta el rol `roles/run.invoker` en la cuenta de servicio
+**Causa**: Problema con permisos de Cloud Run (Cloud Functions Gen2 corre sobre Cloud Run)
 
-**Solución Rápida**:
+**Solución**:
 ```bash
-./reparar_proyecto.sh
-```
-
-**Solución Manual**:
-```bash
-# 1. Agregar rol faltante
-gcloud projects add-iam-policy-binding climas-chileno \
+# 1. Agregar permisos de Cloud Run a la cuenta de servicio
+gcloud run services add-iam-policy-binding extractor-clima \
+  --region=us-central1 \
   --member="serviceAccount:funciones-clima-sa@climas-chileno.iam.gserviceaccount.com" \
   --role="roles/run.invoker"
 
-# 2. Eliminar scheduler job existente
-gcloud scheduler jobs delete extraer-clima-job --location=us-central1 --quiet
-
-# 3. Obtener URL de la función
-URL=$(gcloud functions describe extractor-clima --gen2 --region=us-central1 --format='value(serviceConfig.uri)')
-
-# 4. Recrear scheduler con OIDC
-gcloud scheduler jobs create http extraer-clima-job \
-  --location=us-central1 \
-  --schedule="0 * * * *" \
-  --uri=$URL \
-  --http-method=POST \
-  --oidc-service-account-email=funciones-clima-sa@climas-chileno.iam.gserviceaccount.com \
-  --oidc-token-audience=$URL \
-  --time-zone=America/Santiago
-
-# 5. Probar manualmente
+# 2. Verificar con ejecución manual
 gcloud scheduler jobs run extraer-clima-job --location=us-central1
+
+# 3. Ver logs para confirmar
+gcloud functions logs read extractor-clima --gen2 --region=us-central1 --limit=20
 ```
 
 ### Error: Permisos insuficientes
