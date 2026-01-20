@@ -14,9 +14,9 @@ from datetime import datetime, timezone
 from typing import Dict, List, Any, Tuple
 
 import functions_framework
-import google.auth
-from google.auth.transport.requests import AuthorizedSession
+import requests
 from google.cloud import pubsub_v1
+from google.cloud import secretmanager
 from flask import Request
 
 
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 ID_PROYECTO = os.environ.get('GCP_PROJECT', os.environ.get('GOOGLE_CLOUD_PROJECT', ''))
 NOMBRE_TOPIC = 'clima-datos-crudos'
 URL_BASE_API = 'https://weather.googleapis.com/v1/currentConditions:lookup'
-SCOPE_API = 'https://www.googleapis.com/auth/cloud-platform'
+NOMBRE_SECRET_API_KEY = 'weather-api-key'
 
 # Ubicaciones a monitorear en Chile
 UBICACIONES_MONITOREO = [
@@ -72,61 +72,73 @@ class ErrorConfiguracion(Exception):
     pass
 
 
-def obtener_credenciales() -> Tuple[Any, str]:
+def obtener_api_key() -> str:
     """
-    Obtiene las credenciales de Google Cloud usando Application Default Credentials.
+    Obtiene la API Key de Google Weather desde Secret Manager.
 
     Returns:
-        Tuple[Any, str]: Tupla con (credenciales, id_proyecto)
+        str: API Key para autenticación con Weather API
 
     Raises:
-        ErrorConfiguracion: Si no se pueden obtener las credenciales
+        ErrorConfiguracion: Si no se puede obtener la API Key
     """
     try:
-        credenciales, proyecto = google.auth.default(scopes=[SCOPE_API])
-        logger.info(f"Credenciales obtenidas exitosamente para proyecto: {proyecto}")
-        return credenciales, proyecto
+        cliente_secrets = secretmanager.SecretManagerServiceClient()
+
+        # Construir nombre del secret
+        nombre_secret = f"projects/{ID_PROYECTO}/secrets/{NOMBRE_SECRET_API_KEY}/versions/latest"
+
+        # Obtener el secret
+        respuesta = cliente_secrets.access_secret_version(request={"name": nombre_secret})
+        api_key = respuesta.payload.data.decode('UTF-8')
+
+        logger.info("API Key obtenida exitosamente desde Secret Manager")
+        return api_key
+
     except Exception as e:
-        mensaje_error = f"Error al obtener credenciales: {str(e)}"
+        mensaje_error = f"Error al obtener API Key desde Secret Manager: {str(e)}"
         logger.error(mensaje_error)
         raise ErrorConfiguracion(mensaje_error)
 
 
-def construir_parametros_solicitud(latitud: float, longitud: float) -> Dict[str, Any]:
+def construir_url_api(latitud: float, longitud: float, api_key: str) -> str:
     """
-    Construye los parámetros para la solicitud a la Weather API.
+    Construye la URL completa para la llamada a la Weather API.
 
     Args:
         latitud: Latitud de la ubicación
         longitud: Longitud de la ubicación
+        api_key: API Key para autenticación
 
     Returns:
-        dict: Parámetros formateados para la API
+        str: URL completa con query parameters
     """
-    return {
-        'location': {
-            'latitude': latitud,
-            'longitude': longitud
-        },
-        'unitsSystem': 'METRIC',
-        'languageCode': 'es'
-    }
+    # Construir URL con query parameters
+    url = (
+        f"{URL_BASE_API}"
+        f"?key={api_key}"
+        f"&location.latitude={latitud}"
+        f"&location.longitude={longitud}"
+        f"&languageCode=es"
+    )
+
+    return url
 
 
 def llamar_weather_api(
-    sesion_autorizada: AuthorizedSession,
     latitud: float,
     longitud: float,
-    nombre_ubicacion: str
+    nombre_ubicacion: str,
+    api_key: str
 ) -> Dict[str, Any]:
     """
-    Realiza llamada a la Google Weather API para obtener condiciones actuales.
+    Realiza llamada GET a la Google Weather API para obtener condiciones actuales.
 
     Args:
-        sesion_autorizada: Sesión HTTP autorizada con OAuth 2.0
         latitud: Latitud de la ubicación
         longitud: Longitud de la ubicación
         nombre_ubicacion: Nombre descriptivo de la ubicación
+        api_key: API Key para autenticación
 
     Returns:
         dict: Datos climáticos obtenidos de la API
@@ -135,20 +147,18 @@ def llamar_weather_api(
         ErrorExtraccionClima: Si la llamada a la API falla
     """
     try:
-        parametros = construir_parametros_solicitud(latitud, longitud)
+        # Construir URL con query parameters
+        url = construir_url_api(latitud, longitud, api_key)
 
         logger.info(f"Consultando clima para {nombre_ubicacion} ({latitud}, {longitud})")
 
-        respuesta = sesion_autorizada.post(
-            URL_BASE_API,
-            json=parametros,
-            timeout=30
-        )
+        # Hacer GET request
+        respuesta = requests.get(url, timeout=30)
 
         if respuesta.status_code != 200:
             mensaje_error = (
                 f"Error en API para {nombre_ubicacion}: "
-                f"Estado {respuesta.status_code}, Respuesta: {respuesta.text}"
+                f"Estado {respuesta.status_code}, Respuesta: {respuesta.text[:500]}"
             )
             logger.error(mensaje_error)
             raise ErrorExtraccionClima(mensaje_error)
@@ -160,6 +170,10 @@ def llamar_weather_api(
 
     except ErrorExtraccionClima:
         raise
+    except requests.exceptions.RequestException as e:
+        mensaje_error = f"Error de red al llamar API para {nombre_ubicacion}: {str(e)}"
+        logger.error(mensaje_error)
+        raise ErrorExtraccionClima(mensaje_error)
     except Exception as e:
         mensaje_error = f"Error inesperado al llamar API para {nombre_ubicacion}: {str(e)}"
         logger.error(mensaje_error)
@@ -191,7 +205,7 @@ def enriquecer_datos_clima(
         },
         'descripcion_ubicacion': ubicacion['descripcion'],
         'datos_clima_raw': datos_clima,
-        'version_extractor': '1.0.0'
+        'version_extractor': '2.0.0'  # Actualizado a v2 (API Key)
     }
 
     return datos_enriquecidos
@@ -227,7 +241,7 @@ def publicar_a_pubsub(
         atributos = {
             'ubicacion': nombre_ubicacion,
             'tipo': 'datos_clima',
-            'version': '1.0'
+            'version': '2.0'
         }
 
         # Publicar mensaje
@@ -272,8 +286,8 @@ def extraer_clima(solicitud: Request) -> Tuple[Dict[str, Any], int]:
     Cloud Function HTTP principal que extrae datos climáticos y publica a Pub/Sub.
 
     Esta función es invocada por Cloud Scheduler periódicamente para:
-    1. Obtener credenciales OAuth 2.0
-    2. Consultar Weather API para cada ubicación configurada
+    1. Obtener API Key desde Secret Manager
+    2. Consultar Weather API para cada ubicación configurada (GET con query params)
     3. Enriquecer datos con metadata
     4. Publicar a Pub/Sub topic 'clima-datos-crudos'
 
@@ -310,8 +324,8 @@ def extraer_clima(solicitud: Request) -> Tuple[Dict[str, Any], int]:
         'errores': []
     }
 
-    sesion_autorizada = None
     cliente_publicador = None
+    api_key = None
 
     try:
         # Validar configuración
@@ -322,12 +336,9 @@ def extraer_clima(solicitud: Request) -> Tuple[Dict[str, Any], int]:
                 "Establecer variable de entorno GCP_PROJECT o GOOGLE_CLOUD_PROJECT"
             )
 
-        # Obtener credenciales y crear sesión autorizada
-        credenciales, proyecto_detectado = obtener_credenciales()
-        if not proyecto:
-            proyecto = proyecto_detectado
-
-        sesion_autorizada = AuthorizedSession(credenciales)
+        # Obtener API Key desde Secret Manager
+        logger.info("Obteniendo API Key desde Secret Manager...")
+        api_key = obtener_api_key()
 
         # Crear cliente de Pub/Sub
         cliente_publicador = pubsub_v1.PublisherClient()
@@ -350,12 +361,12 @@ def extraer_clima(solicitud: Request) -> Tuple[Dict[str, Any], int]:
             }
 
             try:
-                # Llamar a Weather API
+                # Llamar a Weather API con GET + API Key
                 datos_clima = llamar_weather_api(
-                    sesion_autorizada,
                     ubicacion['latitud'],
                     ubicacion['longitud'],
-                    nombre_ubicacion
+                    nombre_ubicacion,
+                    api_key
                 )
 
                 # Enriquecer datos
@@ -424,9 +435,10 @@ def extraer_clima(solicitud: Request) -> Tuple[Dict[str, Any], int]:
         }, 500
 
     finally:
-        # Cerrar sesión si existe
-        if sesion_autorizada:
+        # Cerrar cliente si existe
+        if cliente_publicador:
             try:
-                sesion_autorizada.close()
+                # Pub/Sub client no necesita close explícito
+                pass
             except Exception as e:
-                logger.warning(f"Error al cerrar sesión autorizada: {str(e)}")
+                logger.warning(f"Error al finalizar cliente: {str(e)}")

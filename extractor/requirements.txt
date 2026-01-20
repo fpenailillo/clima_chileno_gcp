@@ -7,8 +7,8 @@ functions-framework==3.*
 # Cliente de Google Cloud Pub/Sub
 google-cloud-pubsub==2.*
 
-# Autenticación de Google Cloud
-google-auth==2.*
+# Cliente de Secret Manager para obtener API Key
+google-cloud-secret-manager==2.*
 
 # Cliente HTTP para llamadas a APIs
 requests==2.*
