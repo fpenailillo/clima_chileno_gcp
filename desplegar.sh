@@ -405,13 +405,13 @@ fi
 # Crear nuevo job
 gcloud scheduler jobs create http $JOB_SCHEDULER \
     --location=$REGION \
-    --schedule="0 * * * *" \
+    --schedule="*/10 * * * *" \
     --uri=$URL_EXTRACTOR \
     --http-method=POST \
     --oidc-service-account-email=${CUENTA_SERVICIO}@${ID_PROYECTO}.iam.gserviceaccount.com \
     --oidc-token-audience=$URL_EXTRACTOR \
     --time-zone=$ZONA_HORARIA \
-    --description="Ejecuta extracción de datos climáticos cada hora" \
+    --description="Ejecuta extracción de datos climáticos cada 10 minutos" \
     --project=$ID_PROYECTO
 
 imprimir_exito "Job de Cloud Scheduler creado: $JOB_SCHEDULER"

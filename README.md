@@ -17,7 +17,7 @@ Este proyecto implementa una arquitectura moderna de datos meteorológicos basad
 
 ```
 ┌─────────────────┐
-│ Cloud Scheduler │ (Cada hora)
+│ Cloud Scheduler │ (Cada 10 minutos)
 └────────┬────────┘
          │
          ▼
@@ -265,7 +265,7 @@ El script realiza las siguientes acciones:
 7. ✓ Crea dataset y tabla de BigQuery
 8. ✓ Despliega Cloud Function Extractor
 9. ✓ Despliega Cloud Function Procesador
-10. ✓ Configura Cloud Scheduler (ejecución cada hora)
+10. ✓ Configura Cloud Scheduler (ejecución cada 10 minutos)
 
 **Tiempo estimado**: 5-10 minutos
 
@@ -382,9 +382,9 @@ curl -X POST $URL_EXTRACTOR \
 
 ### Ejecución Programada
 
-Cloud Scheduler ejecuta automáticamente el extractor cada hora según la configuración:
+Cloud Scheduler ejecuta automáticamente el extractor cada 10 minutos según la configuración:
 
-- **Frecuencia**: `0 * * * *` (cada hora en punto)
+- **Frecuencia**: `*/10 * * * *` (cada 10 minutos)
 - **Zona horaria**: America/Santiago
 - **Reintentos**: Hasta 3 intentos con backoff exponencial
 
@@ -556,23 +556,25 @@ Ver [documentación de Cloud Monitoring](https://cloud.google.com/monitoring/doc
 
 ## Costos Estimados
 
-Estimación mensual para **20 ubicaciones** con ejecución cada hora (730 invocaciones/mes):
+Estimación mensual para **20 ubicaciones** con ejecución **cada 10 minutos** (4,320 invocaciones/mes):
 
 | Servicio | Uso | Costo Estimado (USD) |
 |----------|-----|----------------------|
-| Cloud Functions | 1,460 invocaciones (2 funciones) | $0.05 |
-| Pub/Sub | ~14,600 mensajes (20 ubicaciones × 730) | $0.02 |
-| Cloud Storage | ~1 GB mensual (14,600 archivos JSON) | $0.02 |
-| BigQuery | ~100 MB almacenado/mes | $0.01 |
-| BigQuery | ~500 MB queries/mes | $0.01 |
+| Cloud Functions | 8,640 invocaciones (2 funciones × 4,320) | $0.01 |
+| Pub/Sub | ~86,400 mensajes (20 ubicaciones × 4,320) | Gratis (tier: 10 GB/mes) |
+| Cloud Storage | ~6 GB/mes (86,400 archivos JSON × 2 KB) | $0.12 |
+| BigQuery | ~500 MB almacenado/mes | $0.01 |
+| BigQuery | ~3 GB queries/mes | Gratis (tier: 1 TB/mes) |
 | Cloud Scheduler | 1 job | $0.10 |
-| Secret Manager | 1 secret, ~730 accesos/mes | $0.01 |
-| **TOTAL** | | **~$0.22/mes** |
+| Secret Manager | 1 secret, ~4,320 accesos/mes | $0.03 |
+| **TOTAL** | | **~$0.27/mes** |
 
 **Nota**:
 - Los costos son aproximados y pueden variar según el uso real y la región
 - Primer año incluye $300 de créditos gratuitos de GCP
-- Muchos servicios tienen tier gratuito que cubre este volumen de uso
+- Con ejecución cada 10 minutos: **144 mediciones/día** por ubicación (2,880 total)
+- Volumen mensual: ~86,400 registros (vs ~14,600 con ejecución cada hora)
+- La mayoría de servicios entran en tier gratuito con este volumen
 - Estimación basada en precios de us-central1 (Enero 2026)
 
 ## Estructura del Proyecto
