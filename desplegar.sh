@@ -14,7 +14,7 @@
 #   ./desplegar.sh [ID_PROYECTO] [REGION]
 #
 # Ejemplo:
-#   ./desplegar.sh mi-proyecto-clima us-central1
+#   ./desplegar.sh clima-chileno us-central1
 ##############################################################################
 
 set -e  # Salir en caso de error
@@ -73,7 +73,7 @@ CUENTA_SERVICIO="funciones-clima-sa"
 if [ -z "$ID_PROYECTO" ]; then
     imprimir_error "Debe proporcionar el ID del proyecto"
     echo "Uso: $0 [ID_PROYECTO] [REGION]"
-    echo "Ejemplo: $0 mi-proyecto-clima us-central1"
+    echo "Ejemplo: $0 clima-chileno us-central1"
     exit 1
 fi
 
