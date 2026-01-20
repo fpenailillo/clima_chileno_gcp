@@ -17,7 +17,7 @@ Este proyecto implementa una arquitectura moderna de datos meteorológicos basad
 
 ```
 ┌─────────────────┐
-│ Cloud Scheduler │ (Cada hora)
+│ Cloud Scheduler │ (Cada 10 minutos)
 └────────┬────────┘
          │
          ▼
@@ -58,13 +58,51 @@ Este proyecto implementa una arquitectura moderna de datos meteorológicos basad
 
 ## Ubicaciones Monitoreadas
 
-El sistema monitorea las siguientes ubicaciones en Chile:
+El sistema monitorea **20 ubicaciones** distribuidas de norte a sur de Chile, incluyendo principales ciudades y destinos turísticos:
 
+### Zona Norte Grande
 | Ubicación | Latitud | Longitud | Descripción |
 |-----------|---------|----------|-------------|
-| **Santiago** | -33.4489 | -70.6693 | Capital de Chile |
-| **Farellones** | -33.3558 | -70.2989 | Centro de esquí en la cordillera |
-| **Valparaíso** | -33.0472 | -71.6127 | Puerto principal |
+| **Arica** | -18.4746 | -70.2979 | Ciudad de la Eterna Primavera |
+| **Iquique** | -20.2307 | -70.1355 | Playas y Zona Franca |
+| **San Pedro de Atacama** | -22.9098 | -68.1995 | Desierto y Turismo Astronómico |
+
+### Zona Norte Chico
+| Ubicación | Latitud | Longitud | Descripción |
+|-----------|---------|----------|-------------|
+| **La Serena** | -29.9027 | -71.2519 | Playas y Valle del Elqui |
+
+### Zona Central
+| Ubicación | Latitud | Longitud | Descripción |
+|-----------|---------|----------|-------------|
+| **Viña del Mar** | -33.0246 | -71.5516 | Ciudad Jardín |
+| **Valparaíso** | -33.0472 | -71.6127 | Puerto Principal y Patrimonio UNESCO |
+| **Santiago** | -33.4489 | -70.6693 | Capital y Región Metropolitana |
+| **Farellones** | -33.3558 | -70.2989 | Centro de Esquí Cordillera |
+| **Pichilemu** | -34.3870 | -72.0033 | Capital del Surf |
+
+### Zona Sur
+| Ubicación | Latitud | Longitud | Descripción |
+|-----------|---------|----------|-------------|
+| **Concepción** | -36.8270 | -73.0498 | Capital del Biobío |
+| **Temuco** | -38.7359 | -72.5904 | Puerta de La Araucanía |
+| **Pucón** | -39.2819 | -71.9755 | Turismo Aventura y Volcán Villarrica |
+| **Valdivia** | -39.8142 | -73.2459 | Ciudad de los Ríos |
+| **Puerto Varas** | -41.3194 | -72.9833 | Región de los Lagos |
+| **Puerto Montt** | -41.4693 | -72.9424 | Puerta de la Patagonia |
+| **Castro** | -42.4827 | -73.7622 | Palafitos y Cultura Chilota |
+
+### Zona Austral
+| Ubicación | Latitud | Longitud | Descripción |
+|-----------|---------|----------|-------------|
+| **Coyhaique** | -45.5752 | -72.0662 | Capital de Aysén |
+| **Puerto Natales** | -51.7283 | -72.5085 | Acceso Torres del Paine |
+| **Punta Arenas** | -53.1638 | -70.9171 | Ciudad Austral del Estrecho |
+
+### Territorio Insular
+| Ubicación | Latitud | Longitud | Descripción |
+|-----------|---------|----------|-------------|
+| **Isla de Pascua** | -27.1127 | -109.3497 | Rapa Nui - Patrimonio UNESCO |
 
 ## Características Técnicas
 
@@ -227,7 +265,7 @@ El script realiza las siguientes acciones:
 7. ✓ Crea dataset y tabla de BigQuery
 8. ✓ Despliega Cloud Function Extractor
 9. ✓ Despliega Cloud Function Procesador
-10. ✓ Configura Cloud Scheduler (ejecución cada hora)
+10. ✓ Configura Cloud Scheduler (ejecución cada 10 minutos)
 
 **Tiempo estimado**: 5-10 minutos
 
@@ -344,9 +382,9 @@ curl -X POST $URL_EXTRACTOR \
 
 ### Ejecución Programada
 
-Cloud Scheduler ejecuta automáticamente el extractor cada hora según la configuración:
+Cloud Scheduler ejecuta automáticamente el extractor cada 10 minutos según la configuración:
 
-- **Frecuencia**: `0 * * * *` (cada hora en punto)
+- **Frecuencia**: `*/10 * * * *` (cada 10 minutos)
 - **Zona horaria**: America/Santiago
 - **Reintentos**: Hasta 3 intentos con backoff exponencial
 
@@ -421,6 +459,56 @@ ORDER BY
   frecuencia DESC;
 ```
 
+#### Gradiente climático de Norte a Sur (última medición)
+
+```sql
+SELECT
+  nombre_ubicacion,
+  latitud,
+  temperatura,
+  humedad_relativa,
+  velocidad_viento,
+  descripcion_clima,
+  hora_actual
+FROM
+  `clima.condiciones_actuales`
+WHERE
+  hora_actual = (SELECT MAX(hora_actual) FROM `clima.condiciones_actuales`)
+ORDER BY
+  latitud DESC  -- De norte (latitud menos negativa) a sur (más negativa)
+```
+
+#### Comparación de temperaturas extremas por región
+
+```sql
+WITH ultima_hora AS (
+  SELECT MAX(hora_actual) AS max_hora
+  FROM `clima.condiciones_actuales`
+)
+SELECT
+  CASE
+    WHEN latitud > -23 THEN 'Norte Grande'
+    WHEN latitud > -32 THEN 'Norte Chico'
+    WHEN latitud > -38 THEN 'Zona Central'
+    WHEN latitud > -44 THEN 'Zona Sur'
+    ELSE 'Zona Austral'
+  END AS region,
+  COUNT(DISTINCT nombre_ubicacion) AS ciudades,
+  ROUND(AVG(temperatura), 1) AS temp_promedio,
+  ROUND(MIN(temperatura), 1) AS temp_minima,
+  ROUND(MAX(temperatura), 1) AS temp_maxima
+FROM
+  `clima.condiciones_actuales`
+CROSS JOIN
+  ultima_hora
+WHERE
+  hora_actual = ultima_hora.max_hora
+GROUP BY
+  region
+ORDER BY
+  temp_promedio DESC
+```
+
 ### Explorar Datos Crudos en Cloud Storage
 
 ```bash
@@ -468,19 +556,26 @@ Ver [documentación de Cloud Monitoring](https://cloud.google.com/monitoring/doc
 
 ## Costos Estimados
 
-Estimación mensual para ejecución cada hora (730 invocaciones/mes):
+Estimación mensual para **20 ubicaciones** con ejecución **cada 10 minutos** (4,320 invocaciones/mes):
 
 | Servicio | Uso | Costo Estimado (USD) |
 |----------|-----|----------------------|
-| Cloud Functions | 1,460 invocaciones | $0.05 |
-| Pub/Sub | ~3K mensajes | $0.01 |
-| Cloud Storage | 100 GB (bronce) | $2.00 |
-| BigQuery | 10 GB almacenado | $0.20 |
-| BigQuery | 1 GB queries | $0.01 |
+| Cloud Functions | 8,640 invocaciones (2 funciones × 4,320) | $0.01 |
+| Pub/Sub | ~86,400 mensajes (20 ubicaciones × 4,320) | Gratis (tier: 10 GB/mes) |
+| Cloud Storage | ~6 GB/mes (86,400 archivos JSON × 2 KB) | $0.12 |
+| BigQuery | ~500 MB almacenado/mes | $0.01 |
+| BigQuery | ~3 GB queries/mes | Gratis (tier: 1 TB/mes) |
 | Cloud Scheduler | 1 job | $0.10 |
-| **TOTAL** | | **~$2.37/mes** |
+| Secret Manager | 1 secret, ~4,320 accesos/mes | $0.03 |
+| **TOTAL** | | **~$0.27/mes** |
 
-**Nota**: Los costos son aproximados y pueden variar según el uso real y la región.
+**Nota**:
+- Los costos son aproximados y pueden variar según el uso real y la región
+- Primer año incluye $300 de créditos gratuitos de GCP
+- Con ejecución cada 10 minutos: **144 mediciones/día** por ubicación (2,880 total)
+- Volumen mensual: ~86,400 registros (vs ~14,600 con ejecución cada hora)
+- La mayoría de servicios entran en tier gratuito con este volumen
+- Estimación basada en precios de us-central1 (Enero 2026)
 
 ## Estructura del Proyecto
 

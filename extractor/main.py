@@ -35,24 +35,138 @@ URL_BASE_API = 'https://weather.googleapis.com/v1/currentConditions:lookup'
 NOMBRE_SECRET_API_KEY = 'weather-api-key'
 
 # Ubicaciones a monitorear en Chile
+# Cobertura de norte a sur del país, incluyendo principales ciudades y destinos turísticos
 UBICACIONES_MONITOREO = [
+    # ZONA NORTE GRANDE
     {
-        'nombre': 'Santiago',
-        'latitud': -33.4489,
-        'longitud': -70.6693,
-        'descripcion': 'Santiago, Chile - Capital'
+        'nombre': 'Arica',
+        'latitud': -18.4746,
+        'longitud': -70.2979,
+        'descripcion': 'Arica, Chile - Ciudad de la Eterna Primavera'
     },
     {
-        'nombre': 'Farellones',
-        'latitud': -33.3558,
-        'longitud': -70.2989,
-        'descripcion': 'Farellones, Chile - Centro de Esquí'
+        'nombre': 'Iquique',
+        'latitud': -20.2307,
+        'longitud': -70.1355,
+        'descripcion': 'Iquique, Chile - Playas y Zona Franca'
+    },
+    {
+        'nombre': 'San Pedro de Atacama',
+        'latitud': -22.9098,
+        'longitud': -68.1995,
+        'descripcion': 'San Pedro de Atacama, Chile - Desierto y Turismo Astronómico'
+    },
+
+    # ZONA NORTE CHICO
+    {
+        'nombre': 'La Serena',
+        'latitud': -29.9027,
+        'longitud': -71.2519,
+        'descripcion': 'La Serena, Chile - Playas y Valle del Elqui'
+    },
+
+    # ZONA CENTRAL
+    {
+        'nombre': 'Viña del Mar',
+        'latitud': -33.0246,
+        'longitud': -71.5516,
+        'descripcion': 'Viña del Mar, Chile - Ciudad Jardín'
     },
     {
         'nombre': 'Valparaíso',
         'latitud': -33.0472,
         'longitud': -71.6127,
-        'descripcion': 'Valparaíso, Chile - Puerto Principal'
+        'descripcion': 'Valparaíso, Chile - Puerto Principal y Patrimonio UNESCO'
+    },
+    {
+        'nombre': 'Santiago',
+        'latitud': -33.4489,
+        'longitud': -70.6693,
+        'descripcion': 'Santiago, Chile - Capital y Región Metropolitana'
+    },
+    {
+        'nombre': 'Farellones',
+        'latitud': -33.3558,
+        'longitud': -70.2989,
+        'descripcion': 'Farellones, Chile - Centro de Esquí Cordillera de Los Andes'
+    },
+    {
+        'nombre': 'Pichilemu',
+        'latitud': -34.3870,
+        'longitud': -72.0033,
+        'descripcion': 'Pichilemu, Chile - Capital del Surf'
+    },
+
+    # ZONA SUR
+    {
+        'nombre': 'Concepción',
+        'latitud': -36.8270,
+        'longitud': -73.0498,
+        'descripcion': 'Concepción, Chile - Capital del Biobío'
+    },
+    {
+        'nombre': 'Temuco',
+        'latitud': -38.7359,
+        'longitud': -72.5904,
+        'descripcion': 'Temuco, Chile - Puerta de La Araucanía'
+    },
+    {
+        'nombre': 'Pucón',
+        'latitud': -39.2819,
+        'longitud': -71.9755,
+        'descripcion': 'Pucón, Chile - Turismo Aventura y Volcán Villarrica'
+    },
+    {
+        'nombre': 'Valdivia',
+        'latitud': -39.8142,
+        'longitud': -73.2459,
+        'descripcion': 'Valdivia, Chile - Ciudad de los Ríos'
+    },
+    {
+        'nombre': 'Puerto Varas',
+        'latitud': -41.3194,
+        'longitud': -72.9833,
+        'descripcion': 'Puerto Varas, Chile - Región de los Lagos'
+    },
+    {
+        'nombre': 'Puerto Montt',
+        'latitud': -41.4693,
+        'longitud': -72.9424,
+        'descripcion': 'Puerto Montt, Chile - Puerta de la Patagonia'
+    },
+    {
+        'nombre': 'Castro',
+        'latitud': -42.4827,
+        'longitud': -73.7622,
+        'descripcion': 'Castro, Chiloé - Palafitos y Cultura Chilota'
+    },
+
+    # ZONA AUSTRAL
+    {
+        'nombre': 'Coyhaique',
+        'latitud': -45.5752,
+        'longitud': -72.0662,
+        'descripcion': 'Coyhaique, Chile - Capital de Aysén'
+    },
+    {
+        'nombre': 'Puerto Natales',
+        'latitud': -51.7283,
+        'longitud': -72.5085,
+        'descripcion': 'Puerto Natales, Chile - Acceso Torres del Paine'
+    },
+    {
+        'nombre': 'Punta Arenas',
+        'latitud': -53.1638,
+        'longitud': -70.9171,
+        'descripcion': 'Punta Arenas, Chile - Ciudad Austral del Estrecho'
+    },
+
+    # TERRITORIO INSULAR
+    {
+        'nombre': 'Isla de Pascua',
+        'latitud': -27.1127,
+        'longitud': -109.3497,
+        'descripcion': 'Isla de Pascua (Rapa Nui), Chile - Patrimonio UNESCO'
     }
 ]
 
