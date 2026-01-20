@@ -54,6 +54,38 @@ Este proyecto implementa una arquitectura moderna de datos meteorológicos basad
 └──────────────────┘   └──────────────────┘
 ```
 
+## 🚀 Inicio Rápido
+
+Para desplegar el sistema completo en tu proyecto GCP `clima-chileno`:
+
+```bash
+# 1. Configurar proyecto
+gcloud config set project clima-chileno
+
+# 2. Autenticarse
+gcloud auth login
+gcloud auth application-default login
+
+# 3. Desplegar infraestructura completa
+./desplegar.sh clima-chileno us-central1
+```
+
+**¡Listo!** El sistema comenzará a extraer datos climáticos automáticamente cada hora.
+
+### Verificar el despliegue
+
+```bash
+# Ver logs del extractor
+gcloud functions logs read extractor-clima --gen2 --region=us-central1 --limit=20
+
+# Consultar datos en BigQuery
+bq query --use_legacy_sql=false \
+  'SELECT nombre_ubicacion, temperatura, descripcion_clima, hora_actual
+   FROM clima.condiciones_actuales
+   ORDER BY hora_actual DESC
+   LIMIT 5'
+```
+
 ## Ubicaciones Monitoreadas
 
 El sistema monitorea las siguientes ubicaciones en Chile:
@@ -167,7 +199,7 @@ cd clima_chileno_gcp
 ### 2. Configurar Variables de Entorno
 
 ```bash
-export ID_PROYECTO="tu-proyecto-gcp"
+export ID_PROYECTO="clima-chileno"
 export REGION="us-central1"
 ```
 
@@ -197,7 +229,7 @@ El script `desplegar.sh` despliega toda la infraestructura automáticamente:
 Ejemplo:
 
 ```bash
-./desplegar.sh mi-proyecto-clima us-central1
+./desplegar.sh clima-chileno us-central1
 ```
 
 El script realiza las siguientes acciones:

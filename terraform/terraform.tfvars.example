@@ -2,8 +2,8 @@
 # Copiar este archivo a terraform.tfvars y completar con valores reales
 
 # ID del proyecto de Google Cloud Platform
-# Ejemplo: "mi-proyecto-clima-123456"
-id_proyecto = "tu-proyecto-gcp"
+# Ejemplo: "clima-chileno"
+id_proyecto = "clima-chileno"
 
 # Región de GCP donde desplegar los recursos
 # Opciones comunes: "us-central1", "us-east1", "southamerica-east1"
