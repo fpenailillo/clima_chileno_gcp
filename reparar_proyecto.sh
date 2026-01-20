@@ -138,9 +138,26 @@ fi
 imprimir_exito "URL obtenida: $URL_EXTRACTOR"
 
 ##############################################################################
-# PASO 3: Eliminar scheduler job existente (si existe)
+# PASO 3: Otorgar permisos de invocación en el servicio Cloud Run
 ##############################################################################
-imprimir_titulo "PASO 3: Eliminando scheduler job existente"
+imprimir_titulo "PASO 3: Otorgando permisos en el servicio Cloud Run"
+
+imprimir_info "Cloud Functions Gen2 corre sobre Cloud Run - otorgando permisos al servicio..."
+
+# Otorgar permiso de invocación directamente al servicio Cloud Run
+gcloud run services add-iam-policy-binding $FUNCION_EXTRACTOR \
+    --region=$REGION \
+    --member="serviceAccount:$EMAIL_CUENTA" \
+    --role="roles/run.invoker" \
+    --project=$ID_PROYECTO \
+    --quiet
+
+imprimir_exito "Permisos de invocación otorgados al servicio Cloud Run"
+
+##############################################################################
+# PASO 4: Eliminar scheduler job existente (si existe)
+##############################################################################
+imprimir_titulo "PASO 4: Eliminando scheduler job existente"
 
 if gcloud scheduler jobs describe $JOB_SCHEDULER \
     --location=$REGION \
@@ -157,9 +174,9 @@ else
 fi
 
 ##############################################################################
-# PASO 4: Crear nuevo scheduler job con OIDC
+# PASO 5: Crear nuevo scheduler job con OIDC
 ##############################################################################
-imprimir_titulo "PASO 4: Creando nuevo scheduler job con OIDC"
+imprimir_titulo "PASO 5: Creando nuevo scheduler job con OIDC"
 
 imprimir_info "Creando job: $JOB_SCHEDULER"
 imprimir_info "Schedule: 0 * * * * (cada hora)"
@@ -181,9 +198,9 @@ gcloud scheduler jobs create http $JOB_SCHEDULER \
 imprimir_exito "Scheduler job creado exitosamente"
 
 ##############################################################################
-# PASO 5: Probar invocación manual
+# PASO 6: Probar invocación manual
 ##############################################################################
-imprimir_titulo "PASO 5: Probando invocación manual"
+imprimir_titulo "PASO 6: Probando invocación manual"
 
 imprimir_info "Ejecutando invocación manual del scheduler job..."
 gcloud scheduler jobs run $JOB_SCHEDULER \
@@ -195,9 +212,9 @@ sleep 5  # Esperar a que se ejecute
 imprimir_exito "Invocación manual completada"
 
 ##############################################################################
-# PASO 6: Verificar logs de la función
+# PASO 7: Verificar logs de la función
 ##############################################################################
-imprimir_titulo "PASO 6: Verificando logs recientes de la función"
+imprimir_titulo "PASO 7: Verificando logs recientes de la función"
 
 imprimir_info "Obteniendo últimos logs (últimos 5 minutos)..."
 LOGS=$(gcloud functions logs read $FUNCION_EXTRACTOR \
@@ -222,9 +239,9 @@ else
 fi
 
 ##############################################################################
-# PASO 7: Verificar mensajes en Pub/Sub
+# PASO 8: Verificar mensajes en Pub/Sub
 ##############################################################################
-imprimir_titulo "PASO 7: Verificando mensajes en Pub/Sub"
+imprimir_titulo "PASO 8: Verificando mensajes en Pub/Sub"
 
 imprimir_info "Verificando topic: $TOPIC_CLIMA"
 
@@ -271,25 +288,29 @@ fi
 imprimir_titulo "RESUMEN DE REPARACIÓN"
 
 echo -e "${VERDE}✓ Paso 1: Roles verificados y actualizados${NC}"
-echo -e "  - roles/run.invoker agregado (Cloud Run Invoker)"
+echo -e "  - roles/run.invoker agregado a nivel de proyecto"
 echo -e "  - Todos los roles necesarios asignados"
 echo ""
 echo -e "${VERDE}✓ Paso 2: URL de Cloud Function obtenida${NC}"
 echo -e "  - URL: $URL_EXTRACTOR"
 echo ""
-echo -e "${VERDE}✓ Paso 3: Scheduler job anterior eliminado${NC}"
+echo -e "${VERDE}✓ Paso 3: Permisos otorgados al servicio Cloud Run${NC}"
+echo -e "  - roles/run.invoker agregado directamente al servicio"
+echo -e "  - Permite invocación desde Cloud Scheduler"
 echo ""
-echo -e "${VERDE}✓ Paso 4: Nuevo scheduler job creado con OIDC${NC}"
+echo -e "${VERDE}✓ Paso 4: Scheduler job anterior eliminado${NC}"
+echo ""
+echo -e "${VERDE}✓ Paso 5: Nuevo scheduler job creado con OIDC${NC}"
 echo -e "  - Job: $JOB_SCHEDULER"
 echo -e "  - Schedule: Cada hora (0 * * * *)"
 echo -e "  - Service Account: $EMAIL_CUENTA"
 echo -e "  - OIDC habilitado"
 echo ""
-echo -e "${VERDE}✓ Paso 5: Invocación manual ejecutada${NC}"
+echo -e "${VERDE}✓ Paso 6: Invocación manual ejecutada${NC}"
 echo ""
-echo -e "${VERDE}✓ Paso 6: Logs verificados${NC}"
+echo -e "${VERDE}✓ Paso 7: Logs verificados${NC}"
 echo ""
-echo -e "${VERDE}✓ Paso 7: Pub/Sub verificado${NC}"
+echo -e "${VERDE}✓ Paso 8: Pub/Sub verificado${NC}"
 echo ""
 
 imprimir_titulo "PRÓXIMOS PASOS"
