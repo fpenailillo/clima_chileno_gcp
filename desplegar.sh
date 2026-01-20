@@ -294,6 +294,19 @@ URL_EXTRACTOR=$(gcloud functions describe $FUNCION_EXTRACTOR \
 
 echo "URL del extractor: $URL_EXTRACTOR"
 
+# Otorgar permisos de invocación al servicio Cloud Run del extractor
+imprimir_titulo "Otorgando permisos al servicio Cloud Run del extractor"
+imprimir_info "Cloud Functions Gen2 corre sobre Cloud Run - configurando permisos..."
+
+gcloud run services add-iam-policy-binding $FUNCION_EXTRACTOR \
+    --region=$REGION \
+    --member="serviceAccount:${CUENTA_SERVICIO}@${ID_PROYECTO}.iam.gserviceaccount.com" \
+    --role="roles/run.invoker" \
+    --project=$ID_PROYECTO \
+    --quiet
+
+imprimir_exito "Permisos de invocación configurados para Cloud Scheduler"
+
 # Desplegar Cloud Function Procesador
 imprimir_titulo "Desplegando Cloud Function: Procesador"
 gcloud functions deploy $FUNCION_PROCESADOR \
