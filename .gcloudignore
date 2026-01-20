@@ -1,72 +1,27 @@
 # Archivo .gcloudignore - Define qué archivos NO subir a Cloud Functions
-# Similar a .gitignore pero para deployments de GCP
+# Nota: Los deployments usan las carpetas extractor/ y procesador/ directamente
 
 # Git
 .git/
 .gitignore
-.github/
 
-# Python
+# Python cache
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-ENV/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-.nox/
+*.pyc
 
 # IDEs
 .vscode/
 .idea/
 *.swp
-*.swo
-*~
-.DS_Store
 
-# Terraform
-terraform/
-*.tfstate
-*.tfstate.backup
-.terraform/
-*.tfvars
-
-# Documentación y scripts
+# Documentación
 README.md
-LICENSE
 *.md
+
+# Scripts
 desplegar.sh
 
-# Archivos de configuración local
+# Otros
 .env
-.env.local
-*.local
-
-# Logs
 *.log
-
-# Archivos temporales
 tmp/
-temp/
-*.tmp
