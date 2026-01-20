@@ -588,46 +588,7 @@ gcloud functions logs read procesador-clima --gen2 --region=$REGION --limit=100
 # Reprocesar mensajes manualmente si es necesario
 ```
 
-## Mejoras Futuras
 
-- [ ] Agregar más ubicaciones monitoreadas
-- [ ] Implementar pronóstico extendido (15 días)
-- [ ] Crear dashboard en Looker Studio o Data Studio
-- [ ] Añadir alertas automáticas por condiciones climáticas extremas
-- [ ] Implementar API REST para consultar datos históricos
-- [ ] Agregar tests unitarios y de integración
-- [ ] Implementar CI/CD con Cloud Build
-- [ ] Crear capa Gold en BigQuery con agregaciones pre-calculadas
-- [ ] Añadir soporte para múltiples países
-- [ ] Implementar caché de datos con Cloud Memorystore
-
-## Estándares de Código
-
-Este proyecto sigue estándares estrictos de código en español:
-
-- **Variables**: `temperatura_actual`, `datos_meteorologicos`
-- **Funciones**: `extraer_clima()`, `procesar_mensaje()`, `guardar_datos()`
-- **Clases**: `ConfiguracionClima`, `DatosMeteorologicos`
-- **Constantes**: `UBICACIONES_MONITOREO`, `ID_PROYECTO`
-- **Documentación**: Docstrings completos en español con Args, Returns, Raises
-- **Comentarios**: Explicaciones en español
-- **Logs**: Mensajes en español
-
-## Contribuir
-
-1. Fork el proyecto
-2. Crear rama de feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit cambios (`git commit -m 'Agregar nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Crear Pull Request
-
-## Licencia
-
-Este proyecto está bajo la licencia MIT. Ver archivo `LICENSE` para más detalles.
-
-## Contacto
-
-Para preguntas, problemas o sugerencias, por favor abrir un issue en el repositorio.
 
 ## Referencias
 
