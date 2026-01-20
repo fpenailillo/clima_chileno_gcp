@@ -34,21 +34,6 @@ htmlcov/
 .hypothesis/
 pytestdebug.log
 
-# Terraform
-terraform/.terraform/
-terraform/*.tfstate
-terraform/*.tfstate.*
-terraform/.terraform.lock.hcl
-terraform/crash.log
-terraform/override.tf
-terraform/override.tf.json
-terraform/*_override.tf
-terraform/*_override.tf.json
-terraform/.terraformrc
-terraform/terraform.rc
-# Descomentar si quieres ignorar terraform.tfvars
-# terraform/terraform.tfvars
-
 # Google Cloud
 .gcloud/
 credentials.json
@@ -85,8 +70,6 @@ temp/
 
 # Archives
 *.zip
-terraform/extractor.zip
-terraform/procesador.zip
 
 # OS
 Thumbs.db

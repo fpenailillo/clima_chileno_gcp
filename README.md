@@ -158,7 +158,6 @@ El sistema monitorea las siguientes ubicaciones en Chile:
 
 - **Google Cloud SDK** (gcloud CLI) versión 400+
 - **Python** 3.11+
-- **Terraform** 1.0+ (opcional, para IaC)
 - **Git** para control de versiones
 
 ### Cuenta de Google Cloud
@@ -246,46 +245,30 @@ El script realiza las siguientes acciones:
 
 **Tiempo estimado**: 5-10 minutos
 
-### Opción 2: Terraform (Infraestructura como Código)
+### Opción 2: Despliegue Manual
 
-Para usar Terraform:
-
-```bash
-cd terraform
-
-# Inicializar Terraform
-terraform init
-
-# Revisar plan de despliegue
-terraform plan -var="id_proyecto=$ID_PROYECTO" -var="region=$REGION"
-
-# Aplicar cambios
-terraform apply -var="id_proyecto=$ID_PROYECTO" -var="region=$REGION"
-```
-
-### Opción 3: Despliegue Manual
-
-#### 3.1 Crear Topics de Pub/Sub
+#### 2.1 Crear Topics de Pub/Sub
 
 ```bash
 gcloud pubsub topics create clima-datos-crudos --project=$ID_PROYECTO
 gcloud pubsub topics create clima-datos-dlq --project=$ID_PROYECTO
 ```
 
-#### 3.2 Crear Bucket de Cloud Storage
+#### 2.2 Crear Bucket de Cloud Storage
 
 ```bash
 gsutil mb -p $ID_PROYECTO -l $REGION gs://${ID_PROYECTO}-datos-clima-bronce
 gsutil versioning set on gs://${ID_PROYECTO}-datos-clima-bronce
 ```
 
-#### 3.3 Crear Dataset y Tabla de BigQuery
+#### 2.3 Crear Dataset y Tabla de BigQuery
 
 ```bash
 # Crear dataset
 bq mk --project_id=$ID_PROYECTO --location=$REGION clima
 
-# Crear tabla (usar schema del archivo terraform/main.tf)
+# Crear tabla (el schema completo se crea automáticamente con desplegar.sh)
+# Aquí se muestra solo la estructura básica
 bq mk --project_id=$ID_PROYECTO \
   --table \
   --time_partitioning_field=hora_actual \
@@ -294,7 +277,7 @@ bq mk --project_id=$ID_PROYECTO \
   clima.condiciones_actuales
 ```
 
-#### 3.4 Desplegar Cloud Functions
+#### 2.4 Desplegar Cloud Functions
 
 ```bash
 # Extractor
@@ -318,7 +301,7 @@ gcloud functions deploy procesador-clima \
   --set-env-vars=GCP_PROJECT=$ID_PROYECTO
 ```
 
-#### 3.5 Configurar Cloud Scheduler
+#### 2.5 Configurar Cloud Scheduler
 
 ```bash
 # Obtener URL del extractor
@@ -494,15 +477,16 @@ Estimación mensual para ejecución cada hora (730 invocaciones/mes):
 clima_chileno_gcp/
 ├── extractor/
 │   ├── main.py                 # Cloud Function de extracción
-│   └── requirements.txt        # Dependencias del extractor
+│   ├── requirements.txt        # Dependencias del extractor
+│   └── .gcloudignore          # Archivos a ignorar en deploy del extractor
 ├── procesador/
 │   ├── main.py                 # Cloud Function de procesamiento
-│   └── requirements.txt        # Dependencias del procesador
-├── terraform/
-│   └── main.tf                 # Infraestructura como código
-├── desplegar.sh                # Script de despliegue automatizado
-├── .gcloudignore              # Archivos a ignorar en deploy
-└── README.md                   # Este archivo
+│   ├── requirements.txt        # Dependencias del procesador
+│   └── .gcloudignore          # Archivos a ignorar en deploy del procesador
+├── desplegar.sh                # Script de despliegue automatizado (ejecutar esto)
+├── .gcloudignore              # Archivos a ignorar en deploy general
+├── .gitignore                  # Archivos a ignorar en git
+└── README.md                   # Este archivo (documentación completa)
 ```
 
 ## Solución de Problemas
