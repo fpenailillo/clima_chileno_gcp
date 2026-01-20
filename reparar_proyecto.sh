@@ -136,6 +136,27 @@ if gcloud secrets describe weather-api-key --project=$ID_PROYECTO &> /dev/null; 
     else
         imprimir_exito "Secret 'weather-api-key' configurado correctamente"
     fi
+
+    # Verificar y configurar permisos IAM del secret
+    imprimir_info "Verificando permisos IAM del secret..."
+
+    # Obtener política actual del secret
+    TIENE_PERMISO=$(gcloud secrets get-iam-policy weather-api-key \
+        --project=$ID_PROYECTO \
+        --format="value(bindings.members)" 2>/dev/null | \
+        grep -c "serviceAccount:$EMAIL_CUENTA" || true)
+
+    if [ "$TIENE_PERMISO" -eq 0 ]; then
+        imprimir_advertencia "Agregando permisos IAM al secret..."
+        gcloud secrets add-iam-policy-binding weather-api-key \
+            --member="serviceAccount:$EMAIL_CUENTA" \
+            --role="roles/secretmanager.secretAccessor" \
+            --project=$ID_PROYECTO \
+            --quiet
+        imprimir_exito "Permisos IAM agregados al secret"
+    else
+        imprimir_exito "Secret tiene permisos IAM correctos"
+    fi
 else
     imprimir_error "Secret 'weather-api-key' NO existe en Secret Manager"
     echo "Ejecuta primero: ./desplegar.sh $ID_PROYECTO"
