@@ -132,6 +132,7 @@ roles=(
     "roles/bigquery.dataEditor"
     "roles/logging.logWriter"
     "roles/cloudfunctions.invoker"
+    "roles/run.invoker"
 )
 
 for rol in "${roles[@]}"; do

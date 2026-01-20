@@ -483,13 +483,66 @@ clima_chileno_gcp/
 │   ├── main.py                 # Cloud Function de procesamiento
 │   ├── requirements.txt        # Dependencias del procesador
 │   └── .gcloudignore          # Archivos a ignorar en deploy del procesador
-├── desplegar.sh                # Script de despliegue automatizado (ejecutar esto)
+├── desplegar.sh                # Script de despliegue automatizado
+├── reparar_proyecto.sh         # Script de reparación (si hay problemas)
 ├── .gcloudignore              # Archivos a ignorar en deploy general
 ├── .gitignore                  # Archivos a ignorar en git
 └── README.md                   # Este archivo (documentación completa)
 ```
 
 ## Solución de Problemas
+
+### Script de Reparación Automático
+
+Si experimentas problemas después del despliegue, especialmente con Cloud Scheduler, ejecuta:
+
+```bash
+./reparar_proyecto.sh
+```
+
+Este script automáticamente:
+- ✓ Verifica y agrega roles faltantes (especialmente `roles/run.invoker`)
+- ✓ Reconfigura Cloud Scheduler con OIDC correcto
+- ✓ Prueba la invocación manual
+- ✓ Verifica logs y Pub/Sub
+
+### Error: Cloud Scheduler "The request was not authenticated"
+
+**Síntoma**: Cloud Scheduler no puede invocar Cloud Function Gen2, error de autenticación
+
+**Causa**: Falta el rol `roles/run.invoker` en la cuenta de servicio
+
+**Solución Rápida**:
+```bash
+./reparar_proyecto.sh
+```
+
+**Solución Manual**:
+```bash
+# 1. Agregar rol faltante
+gcloud projects add-iam-policy-binding climas-chileno \
+  --member="serviceAccount:funciones-clima-sa@climas-chileno.iam.gserviceaccount.com" \
+  --role="roles/run.invoker"
+
+# 2. Eliminar scheduler job existente
+gcloud scheduler jobs delete extraer-clima-job --location=us-central1 --quiet
+
+# 3. Obtener URL de la función
+URL=$(gcloud functions describe extractor-clima --gen2 --region=us-central1 --format='value(serviceConfig.uri)')
+
+# 4. Recrear scheduler con OIDC
+gcloud scheduler jobs create http extraer-clima-job \
+  --location=us-central1 \
+  --schedule="0 * * * *" \
+  --uri=$URL \
+  --http-method=POST \
+  --oidc-service-account-email=funciones-clima-sa@climas-chileno.iam.gserviceaccount.com \
+  --oidc-token-audience=$URL \
+  --time-zone=America/Santiago
+
+# 5. Probar manualmente
+gcloud scheduler jobs run extraer-clima-job --location=us-central1
+```
 
 ### Error: Permisos insuficientes
 
