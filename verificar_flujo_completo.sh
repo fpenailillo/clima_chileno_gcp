@@ -92,12 +92,12 @@ echo "Últimos 5 registros (más recientes):"
 bq query --use_legacy_sql=false --project_id=$ID_PROYECTO --format=pretty \
     "SELECT
         nombre_ubicacion,
-        CAST(temperatura_celsius AS STRING) as temp_c,
-        descripcion_tiempo,
+        CAST(temperatura AS STRING) as temp_c,
+        descripcion_clima,
         FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S', hora_actual) as fecha_hora,
-        FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S', timestamp_ingestion) as ingestion
+        FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S', marca_tiempo_ingestion) as ingestion
     FROM clima.condiciones_actuales
-    ORDER BY timestamp_ingestion DESC
+    ORDER BY marca_tiempo_ingestion DESC
     LIMIT 5" 2>/dev/null || echo "No se pudo consultar BigQuery"
 
 echo ""
@@ -108,7 +108,7 @@ bq query --use_legacy_sql=false --project_id=$ID_PROYECTO --format=pretty \
     "SELECT
         nombre_ubicacion,
         COUNT(*) as cantidad,
-        MAX(timestamp_ingestion) as ultima_ingestion
+        MAX(marca_tiempo_ingestion) as ultima_ingestion
     FROM clima.condiciones_actuales
     GROUP BY nombre_ubicacion
     ORDER BY nombre_ubicacion" 2>/dev/null || echo "No se pudo consultar BigQuery"
@@ -157,7 +157,7 @@ echo -e "${NC}"
 # Verificar si hay datos recientes (últimos 10 minutos)
 REGISTROS_RECIENTES=$(bq query --use_legacy_sql=false --project_id=$ID_PROYECTO --format=csv \
     "SELECT COUNT(*) FROM clima.condiciones_actuales
-    WHERE timestamp_ingestion >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 10 MINUTE)" 2>/dev/null | tail -1)
+    WHERE marca_tiempo_ingestion >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 10 MINUTE)" 2>/dev/null | tail -1)
 
 if [ "$REGISTROS_RECIENTES" -gt 0 ]; then
     echo -e "${VERDE}✓ Sistema funcionando correctamente${NC}"
