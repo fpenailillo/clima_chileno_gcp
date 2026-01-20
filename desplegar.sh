@@ -104,6 +104,8 @@ apis=(
     "bigquery.googleapis.com"
     "logging.googleapis.com"
     "run.googleapis.com"
+    "eventarc.googleapis.com"
+    "weather.googleapis.com"
 )
 
 for api in "${apis[@]}"; do
