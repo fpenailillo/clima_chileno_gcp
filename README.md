@@ -601,4 +601,4 @@ gcloud functions logs read procesador-clima --gen2 --region=$REGION --limit=100
 
 ---
 
-**Nota**: Este sistema está diseñado para propósitos educativos y de demostración. Para uso en producción, considere implementar autenticación más robusta, monitoreo avanzado, y pruebas exhaustivas.
+**Nota**: Este sistema está diseñado para propósitos educativos y de demostración.
