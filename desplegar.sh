@@ -205,7 +205,7 @@ fi
 
 # Crear dataset de BigQuery
 imprimir_titulo "Creando dataset de BigQuery"
-if bq ls -d --project_id=$ID_PROYECTO $DATASET_CLIMA &> /dev/null; then
+if bq show --project_id=$ID_PROYECTO $DATASET_CLIMA &>/dev/null; then
     imprimir_advertencia "Dataset ya existe: $DATASET_CLIMA"
 else
     bq mk --project_id=$ID_PROYECTO \
