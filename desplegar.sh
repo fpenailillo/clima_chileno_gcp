@@ -405,13 +405,13 @@ fi
 # Crear nuevo job
 gcloud scheduler jobs create http $JOB_SCHEDULER \
     --location=$REGION \
-    --schedule="*/10 * * * *" \
+    --schedule="* * * * *" \
     --uri=$URL_EXTRACTOR \
     --http-method=POST \
     --oidc-service-account-email=${CUENTA_SERVICIO}@${ID_PROYECTO}.iam.gserviceaccount.com \
     --oidc-token-audience=$URL_EXTRACTOR \
     --time-zone=$ZONA_HORARIA \
-    --description="Ejecuta extracción de datos climáticos cada 10 minutos" \
+    --description="Ejecuta extracción de datos climáticos cada minuto" \
     --project=$ID_PROYECTO
 
 imprimir_exito "Job de Cloud Scheduler creado: $JOB_SCHEDULER"
@@ -438,7 +438,7 @@ echo -e "${AMARILLO}Próximos pasos:${NC}"
 echo "  1. Probar extractor manualmente: curl -X POST $URL_EXTRACTOR"
 echo "  2. Ver logs: gcloud functions logs read $FUNCION_EXTRACTOR --gen2 --region=$REGION"
 echo "  3. Consultar BigQuery: bq query --use_legacy_sql=false 'SELECT * FROM $DATASET_CLIMA.$TABLA_CONDICIONES LIMIT 10'"
-echo "  4. El scheduler ejecutará automáticamente cada hora"
+echo "  4. El scheduler ejecutará automáticamente cada minuto"
 echo ""
 
 imprimir_exito "¡Listo! El sistema está desplegado y funcionando."
